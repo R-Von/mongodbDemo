@@ -368,3 +368,109 @@ result.forEach(function(item){
     printjson(item)
 })
 ```
+
+
+### 索引
+#### 随机生成百万条数据
+#### 普通查询性能
+普通查询 随机查找一个用户名 计算出查询和打印时间
+```
+var startTime = new Data().getTime()
+var db = connect('user')
+var result = db.randomInfo.find({username:'oxqvb926'})
+result.forEach(rs=>{
+    printjson(rs)
+})
+var runTime = new Date().getTime()-startTime
+print('[SUCCESS] This run time is:'+runTime+'ms')
+
+```
+#### 建立索引
+试着为用户名(username)建立索引 
+```
+db.randomInfo.ensureIndex({username:1})
+```
+查看现有索引
+```
+db.randomInfo.getIndexes()
+```
+### 复合索引
+使用指南
+- 数据不超万条时 不需要使用索引 性能提升并不明显 大大增加了内存和硬盘的消耗
+- 查询数据超过表数据量30%时 不要使用索引字段查询  实际证明会比不使用索引更慢 因为它大量检索了索引表和原表
+- 数字索引 比字符串索引快
+- 把经常查询的数据做成一个内嵌数据(对象型的数据) 然后集体进行索引
+
+#### 复合索引
+复合索引 就是两条以上的索引 
+```
+db.randomInfo.ensureIndex({randNum0:1})
+```
+这样就建立了```randNum0```和```username```两个索引
+
+可以针对两个索引同时查询
+```
+db.randomInfo.find({username:'xxx',randNum0:xxxx})
+```
+#### 指定索引(hint)
+```
+var rs = db.randomInfo.find({username:'xxx',randNum0:xxxx}).hint({randNum0:1})
+```
+### 全文索引
+#### 全文索引查找 
+- $text:表示要在全文索引中查东西
+- $search:后面跟查找的内容
+
+```
+db.info.find({$text:{$search:'programmer'}})
+```
+
+### 用户管理
+#### 创建用户
+使用```db.createUser```来完成创建用户
+```
+db.createUser({
+    user:'jspang',
+    pwd:'123456',
+    customData:{
+        name:'xxx',
+        email:'xxxx@xx.com',
+        age:19
+    },
+    roles:['read']
+})
+```
+1. 数据库用户角色：read readWrite
+2. 数据库管理角色：dbAdmin dbOwner userAdmin 
+3. 集群管理工具：clusterAdmin clusterManager ClusterMOnitor hostManager
+4. 备份恢复角色：backup restore
+5. 所有数据库角色：readyAnyDatabase readyWriteAnyDatabase userAdminAnyDatabase dbAdminAnyDatabase
+6. 超级用户角色:root
+7. 内部角色:__system
+
+#### 查找用户信息
+```
+db.system.users.find()
+```
+#### 删除用户
+```
+db.system.users.remove({username:xxx})
+```
+#### 鉴权 
+验证用户的用户名和密码是否正确 也算是一种登陆操作 
+```
+db.auth('username','password')
+```
+正确1 错误 0
+
+#### 启动鉴权
+
+重启MongoDB服务器 设置必须使用鉴权登陆
+```
+mongod --auth
+```
+#### 登陆
+配置鉴权后 用户如果想登陆 可以使用mongo的形式 不过必须配置用户名和密码
+```
+mongod -u username -p password 127.0.0.1:27017/admin
+```
